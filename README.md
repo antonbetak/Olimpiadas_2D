@@ -1,6 +1,6 @@
 # Olimpiadas 2D — C++ + raylib
 
-Proyecto POO para la modalidad **Videojuego 2D**. Esta primera versión contiene dos disciplinas jugables: atletismo (100 m) y natación (50 m), tres atletas por carrera, teclas aleatorias, cronómetro, clasificaciones y registro en archivo.
+Proyecto POO para la modalidad **Videojuego 2D**. El juego contiene tres disciplinas jugables: atletismo (100 m), natación (50 m) y carrera de obstáculos, tres atletas por carrera, teclas aleatorias, cronómetro, clasificaciones y registro en archivo.
 
 ## Requisitos
 
@@ -24,14 +24,16 @@ Con generadores de un solo tipo de configuración (por ejemplo, MinGW), el ejecu
 
 ## Controles
 
-- Menú: `1` atletismo, `2` natación.
+- Menú: `1` atletismo, `2` natación, `3` obstáculos, o haz clic en la disciplina.
 - Atletismo: pulsar la letra indicada entre `A`, `S`, `D`, `F`.
-- Natación: pulsar la letra indicada entre `J`, `K`, `L`.
+- Natación: pulsa `Espacio` cuando el indicador esté en la zona verde para dar una brazada; pulsa `B` para recuperar oxígeno (una vez cada 1.5 segundos). Fuera de la zona cuenta como error y no avanzas.
+- Obstáculos: `A`/`D` o flechas para moverse; `Espacio`, `W` o flecha arriba para saltar. Esquiva las vallas, recoge medallas y llega a la bandera antes de perder tus tres vidas.
+- Cinemática: `Espacio` la salta; comienza automáticamente al terminar.
 - Carrera: `M` vuelve al menú.
 - Resultados: `R` revancha, `M` menú.
 - `Esc` cierra la ventana (raylib).
 
-Cada acierto avanza al personaje una distancia fija, distinta por deporte. Los rivales avanzan automáticamente. La carrera termina cuando todos alcanzan la meta; se registra el tiempo y posición del jugador en `records.csv` en el directorio desde el que se ejecuta.
+Cada acierto impulsa al personaje y consume resistencia en atletismo u oxígeno en natación. Con menos del 20% el avance disminuye. La resistencia se recupera al descansar; el oxígeno se recupera pulsando B. En natación debes acertar el ritmo de la barra para avanzar. Los dos rivales avanzan automáticamente: uno sale rápido y pierde fuerza, y el otro varía su ritmo. La carrera termina cuando todos alcanzan la meta; se registra el tiempo y posición del jugador en `records.csv` en el directorio desde el que se ejecuta.
 
 ## Diseño POO
 
@@ -44,6 +46,14 @@ Cada acierto avanza al personaje una distancia fija, distinta por deporte. Los r
 
 Ver `docs/diagrama_uml.md` para la relación de clases.
 
-## Mejoras previstas antes de la entrega
+## Ejecutar en macOS o Linux
 
-Esta es una **base funcional**, no la versión final. Se pueden añadir dificultades, respiración en natación, velocistas con comportamientos más avanzados, animaciones con sprites, sonidos y pantalla de medallas. Para una evaluación de nivel ALTO, conviene justificar las mejoras de lógica y POO, no solo gráficos.
+```bash
+cmake -S . -B build
+cmake --build build
+./build/Olimpiadas2D
+```
+
+## Ideas para la exposición
+
+El objetivo es ganar una carrera en atletismo o natación. `Juego` administra las pantallas y `Competencia` coordina a los atletas y los controles. `Atleta` define una interfaz virtual; `Corredor` y `Nadador` implementan animaciones y recursos diferentes. La colección de atletas permite llamar a esos métodos de forma polimórfica. `GestorArchivos` guarda los resultados y consulta el mejor tiempo. El UML está en `docs/diagrama_uml.md`. Conviene demostrar ambos deportes y explicar cómo cambian el avance, la resistencia y el oxígeno.

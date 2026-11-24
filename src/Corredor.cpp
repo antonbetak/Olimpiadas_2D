@@ -1,9 +1,14 @@
 #include "Corredor.h"
 #include <cmath>
+#include <algorithm>
 #include <utility>
 Corredor::Corredor(std::string nombre, bool jugador) : Atleta(std::move(nombre), jugador) {}
-void Corredor::actualizar(float dt) { faseAnimacion_ += dt * (termino() ? 0.0f : 13.0f); }
-void Corredor::avanzarPorAcierto(float meta, float tiempoActual) { mover(4.2f, meta, tiempoActual); }
+float Corredor::energia() const { return energia_; }
+void Corredor::accionEspecial() {}
+void Corredor::actualizar(float dt) {
+    if (!termino()) { faseAnimacion_ += dt * 13.0f; energia_ = std::min(100.0f, energia_ + 12.0f * dt); }
+}
+void Corredor::avanzarPorAcierto(float meta, float tiempoActual) { mover(energia_ >= 20.0f ? 4.2f : 1.8f, meta, tiempoActual); energia_ = std::max(0.0f, energia_ - 12.0f); }
 void Corredor::avanzarIA(float dt, float velocidad, float meta, float tiempoActual) { mover(velocidad*dt, meta, tiempoActual); }
 void Corredor::dibujar(Vector2 p, Color c) const {
     float z = std::sin(faseAnimacion_)*12.0f;

@@ -80,7 +80,7 @@ Competencia::Competencia(Disciplina disciplina)
   : disciplina_(disciplina), meta_(disciplina == Disciplina::Atletismo ? 100.0f : 50.0f),
     control_(disciplina == Disciplina::Natacion) {
     for (int i = 0; i < 3; ++i) {
-        const std::string nombre = i == 0 ? "TU" : "CPU " + std::to_string(i);
+        const std::string nombre = i == 0 ? "TU" : (i == 1 ? "RAPIDO" : "RITMICO");
         bool jugador = i == 0;
         if (disciplina_ == Disciplina::Atletismo)
             atletas_.push_back(std::make_unique<Corredor>(nombre, jugador));
@@ -88,7 +88,7 @@ Competencia::Competencia(Disciplina disciplina)
             atletas_.push_back(std::make_unique<Nadador>(nombre, jugador));
     }
     velocidadesIA_ = disciplina_ == Disciplina::Atletismo
-        ? std::vector<float>{0, 7.4f, 8.1f} : std::vector<float>{0, 1.75f, 2.05f};
+        ? std::vector<float>{0, 5.5f, 6.0f} : std::vector<float>{0, 1.25f, 1.45f};
 }
 void Competencia::actualizar(float dt) {
     if (finalizada_) return;
@@ -96,20 +96,46 @@ void Competencia::actualizar(float dt) {
     tiempo_ += dt;
     const std::array<int, 7> teclas{KEY_A, KEY_S, KEY_D, KEY_F, KEY_J, KEY_K, KEY_L};
     if (!jugador().termino()) {
-        for (int tecla : teclas) {
-            if (!IsKeyPressed(tecla)) continue;
-            if (control_.procesar(tecla)) {
-                ++aciertos_;
-                atletas_.front()->avanzarPorAcierto(meta_, tiempo_);
-            } else {
-                ++errores_;
+        if (disciplina_ == Disciplina::Natacion) {
+            // El indicador recorre la barra en ambos sentidos; la zona central es el objetivo.
+            float marcador = 0.5f + 0.5f * std::sin(tiempo_ * 3.2f);
+            if (IsKeyPressed(KEY_B) && tiempo_ >= proximaRespiracion_) {
+                atletas_.front()->accionEspecial();
+                proximaRespiracion_ = tiempo_ + 1.5f;
             }
-            break;
+            if (IsKeyPressed(KEY_SPACE)) {
+                float centro = 0.5f + 0.18f * std::sin(tiempo_ * 0.9f);
+                float ancho = 0.24f - 0.08f * (0.5f + 0.5f * std::sin(tiempo_ * 1.7f));
+                if (std::abs(marcador - centro) <= ancho) {
+                    ++aciertos_;
+                    ++combo_;
+                    atletas_.front()->avanzarPorAcierto(meta_, tiempo_);
+                } else {
+                    ++errores_;
+                    combo_ = 0;
+                }
+            }
+        } else {
+            for (int tecla : teclas) {
+                if (!IsKeyPressed(tecla)) continue;
+                if (control_.procesar(tecla)) {
+                    ++aciertos_;
+                    atletas_.front()->avanzarPorAcierto(meta_, tiempo_);
+                } else {
+                    ++errores_;
+                }
+                break;
+            }
         }
     }
     for (std::size_t i = 0; i < atletas_.size(); ++i) {
         atletas_[i]->actualizar(dt);
-        if (i != 0) atletas_[i]->avanzarIA(dt, velocidadesIA_[i], meta_, tiempo_);
+        if (i != 0) {
+            // Un rival sale rapido y pierde fuerza; el otro cambia de ritmo.
+            float factor = i == 1 ? 1.25f - 0.35f * std::min(tiempo_ / 15.0f, 1.0f)
+                                  : 1.0f + 0.18f * std::sin(tiempo_ * 0.8f);
+            atletas_[i]->avanzarIA(dt, velocidadesIA_[i] * factor, meta_, tiempo_);
+        }
     }
     finalizada_ = std::all_of(atletas_.begin(), atletas_.end(),
                              [](const auto& a){ return a->termino(); });
@@ -134,8 +160,7 @@ void Competencia::dibujar() const {
     DrawRectangle(0,551,1100,189,Color{9,20,38,249});
     if (agua) {
         DrawRectangleGradientH(390, 551, 320, 189, Color{12,39,69,255}, Color{10,27,50,255});
-        DrawText("OBJETIVO", 790, 690, 13, APAGADO);
-        DrawText("LLEGA PRIMERO", 790, 710, 16, Color{114,233,238,255});
+
     }
     DrawText("TU PROGRESO", 48, 571, 17, APAGADO);
     DrawRectangleRounded({48,602,300,15}, .5f, 12, Color{49,69,95,255});
@@ -145,19 +170,36 @@ void Competencia::dibujar() const {
     DrawText(TextFormat("ACIERTOS  %d",aciertos_),48,689,18,Color{114,233,177,255});
     DrawText(TextFormat("ERRORES  %d",errores_),215,689,18,Color{255,140,139,255});
     if (!jugador().termino()) {
-        DrawRectangleRounded({431,563,239,157}, .18f, 12, Color{28,53,82,255});
-        DrawRectangleRoundedLinesEx({431,563,239,157},.18f,12,2,Color{115,175,218,110});
-        DrawText("PRESIONA",495,576,19,TINTA);
-        const char* tecla = teclaTexto(control_.teclaActual());
-        DrawRectangleRounded({505,608,90,84},.20f,12,Color{250,199,89,255});
-        DrawText(tecla,550-MeasureText(tecla,53)/2,622,53,Color{17,32,51,255});
+        DrawRectangleRounded({411,563,279,157}, .18f, 12, Color{28,53,82,255});
+        DrawRectangleRoundedLinesEx({411,563,279,157},.18f,12,2,Color{115,175,218,110});
+        if (agua) {
+            DrawText("RITMO DE BRAZADA", 442, 580, 18, TINTA);
+            DrawRectangleRounded({435, 620, 230, 22}, .5f, 8, Color{50,72,100,255});
+            float centro = 0.5f + 0.18f * std::sin(tiempo_ * 0.9f);
+            float ancho = 0.24f - 0.08f * (0.5f + 0.5f * std::sin(tiempo_ * 1.7f));
+            DrawRectangle((int)(435 + (centro-ancho)*230), 620, (int)(ancho*2*230), 22, Color{74,225,196,255});
+            float marcador = 0.5f + 0.5f * std::sin(tiempo_ * 3.2f);
+            DrawCircle((int)(435 + marcador*230), 631, 8, GOLD);
+            DrawText(TextFormat("ESPACIO EN VERDE   COMBO x%d", combo_), 438, 664, 15, TINTA);
+            DrawText(tiempo_ >= proximaRespiracion_ ? "B PARA RESPIRAR" : "RECUPERANDO...", 463, 690, 15, APAGADO);
+        } else {
+            DrawText("PRESIONA",495,576,19,TINTA);
+            const char* tecla = teclaTexto(control_.teclaActual());
+            DrawRectangleRounded({505,608,90,84},.20f,12,Color{250,199,89,255});
+            DrawText(tecla,550-MeasureText(tecla,53)/2,622,53,Color{17,32,51,255});
+        }
     } else {
         DrawText("META ALCANZADA",432,610,23,Color{255,208,109,255});
         DrawText("ESPERANDO RIVALES",431,642,16,APAGADO);
     }
-    DrawText(agua ? "MANTEN TU RITMO" : "TECLEA RAPIDO",780,584,20,TINTA);
-    DrawText(agua ? "J / K / L" : "A / S / D / F",780,622,25,Color{79,211,236,255});
-    DrawText(agua ? "CADA BRAZADA TE IMPULSA" : "CADA ACIERTO TE IMPULSA",780,661,14,APAGADO);
+    DrawText(agua ? "OXIGENO" : "RESISTENCIA",780,571,18,TINTA);
+    DrawRectangleRounded({780,600,260,15}, .5f, 8, Color{49,69,95,255});
+    float energia = jugador().energia();
+    if (energia > 0) DrawRectangleRounded({780,600,260*energia/100,15}, .5f, 8,
+                                          energia < 20 ? Color{255,120,100,255} : Color{79,211,236,255});
+    DrawText(TextFormat("%.0f%%", energia), 780, 625, 20, TINTA);
+    DrawText(agua ? "B: RESPIRAR" : "DESCANSA PARA RECUPERAR", 780, 656, 15, APAGADO);
+    DrawText("BAJO 20%: AVANCE MENOR", 780, 678, 15, APAGADO);
 }
 bool Competencia::finalizada() const { return finalizada_; }
 Disciplina Competencia::disciplina() const { return disciplina_; }

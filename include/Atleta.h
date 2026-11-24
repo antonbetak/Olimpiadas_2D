@@ -19,6 +19,8 @@ public:
     float tiempoLlegada() const;
     bool esJugador() const;
     bool termino() const;
+    virtual float energia() const = 0;
+    virtual void accionEspecial() = 0;
     virtual void actualizar(float dt) = 0;
     virtual void avanzarPorAcierto(float meta, float tiempoActual) = 0;
     virtual void avanzarIA(float dt, float velocidad, float meta, float tiempoActual) = 0;

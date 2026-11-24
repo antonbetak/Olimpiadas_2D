@@ -1,9 +1,12 @@
 #include "Nadador.h"
 #include <cmath>
+#include <algorithm>
 #include <utility>
 Nadador::Nadador(std::string nombre, bool jugador) : Atleta(std::move(nombre), jugador) {}
-void Nadador::actualizar(float dt) { faseAnimacion_ += dt * (termino() ? 0.0f : 9.0f); }
-void Nadador::avanzarPorAcierto(float meta, float tiempoActual) { mover(3.0f, meta, tiempoActual); }
+float Nadador::energia() const { return energia_; }
+void Nadador::accionEspecial() { energia_ = std::min(100.0f, energia_ + 35.0f); }
+void Nadador::actualizar(float dt) { if (!termino()) faseAnimacion_ += dt * 9.0f; }
+void Nadador::avanzarPorAcierto(float meta, float tiempoActual) { mover(energia_ >= 20.0f ? 3.0f : 1.2f, meta, tiempoActual); energia_ = std::max(0.0f, energia_ - 14.0f); }
 void Nadador::avanzarIA(float dt, float velocidad, float meta, float tiempoActual) { mover(velocidad*dt, meta, tiempoActual); }
 void Nadador::dibujar(Vector2 p, Color c) const {
     float brazada = std::sin(faseAnimacion_)*11.0f;

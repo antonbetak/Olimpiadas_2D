@@ -10,6 +10,8 @@ private:
     Disciplina disciplina_;
     float meta_;
     float tiempo_ = 0;
+    float proximaRespiracion_ = 0;
+    int combo_ = 0;
     int aciertos_ = 0;
     int errores_ = 0;
     bool finalizada_ = false;

@@ -12,7 +12,7 @@ if(NOT raylib_FOUND)
 endif()
 add_executable(Olimpiadas2D
   src/main.cpp src/Atleta.cpp src/Corredor.cpp src/Nadador.cpp
-  src/ControlTeclas.cpp src/Competencia.cpp src/GestorArchivos.cpp src/Juego.cpp)
+  src/ControlTeclas.cpp src/CarreraObstaculos.cpp src/Competencia.cpp src/GestorArchivos.cpp src/Juego.cpp)
 target_include_directories(Olimpiadas2D PRIVATE include)
 target_link_libraries(Olimpiadas2D PRIVATE raylib)
 if(WIN32)
